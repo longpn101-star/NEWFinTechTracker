@@ -1,7 +1,7 @@
 package model;
 
 import java.time.LocalDate;
-
+//max sucks
 /**
  * Represents an expense transaction (e.g., rent, groceries, utilities).
  * Extends the abstract Transaction class.
