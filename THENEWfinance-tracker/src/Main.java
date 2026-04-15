@@ -1,7 +1,7 @@
 import model.*;
 import ui.ConsoleUI;
 import java.time.LocalDate;
- 
+ //hias
 /**
  * Entry point for the Personal Finance Tracker application.
  * Initializes the manager and launches the console UI.
