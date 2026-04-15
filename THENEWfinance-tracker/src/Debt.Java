@@ -2,6 +2,8 @@ package model;
 
 import java.time.LocalDate;
 
+
+/** for sureeee */
 /**
  * Represents a debt entry (e.g., student loan, credit card debt, mortgage).
  * Extends the abstract Transaction class.
