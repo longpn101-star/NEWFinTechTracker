@@ -1,22 +1,17 @@
 package ui;
 
-import javafx.geometry.Insets;
-import javafx.geometry.Pos;
-import javafx.scene.Scene;
-import javafx.scene.control.*;
-import javafx.scene.layout.*;
-import javafx.scene.paint.Color;
-import javafx.scene.text.*;
-import javafx.stage.Stage;
 import model.FinanceManager;
+import javax.swing.*;
+import java.awt.*;
 
-// the main window of the GUI, holds all the tabs
+// main window of the GUI - uses a JTabbedPane to hold all four tabs
 public class MainWindow {
 
 	private FinanceManager manager;
-	private TabPane tabPane;
+	private JFrame frame;
+	private JTabbedPane tabs;
 
-	// keep references to each tab so we can refresh them
+	// keep references so we can refresh them
 	private DashboardTab dashboardTab;
 	private TransactionsTab transactionsTab;
 	private AddTransactionTab addTransactionTab;
@@ -26,72 +21,65 @@ public class MainWindow {
 		this.manager = manager;
 	}
 
-	public void show(Stage stage) {
-		stage.setTitle("Personal Finance Tracker — " + manager.getOwnerName());
-		stage.setMinWidth(860);
-		stage.setMinHeight(620);
+	public void show() {
+		frame = new JFrame("Personal Finance Tracker — " + manager.getOwnerName());
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		frame.setSize(900, 650);
+		frame.setLocationRelativeTo(null); // center on screen
+		frame.setLayout(new BorderLayout());
 
-		HBox header = buildHeader();
+		// header panel at the top
+		frame.add(buildHeader(), BorderLayout.NORTH);
 
-		// create all four tabs
-		tabPane = new TabPane();
-		tabPane.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
+		// create the four tabs
+		tabs = new JTabbedPane();
+		tabs.setFont(new Font("Georgia", Font.PLAIN, 13));
 
 		dashboardTab      = new DashboardTab(manager, this);
 		transactionsTab   = new TransactionsTab(manager, this);
 		addTransactionTab = new AddTransactionTab(manager, this);
 		budgetTab         = new BudgetTab(manager, this);
 
-		tabPane.getTabs().addAll(
-				dashboardTab.getTab(),
-				transactionsTab.getTab(),
-				addTransactionTab.getTab(),
-				budgetTab.getTab()
-		);
+		tabs.addTab("📊 Dashboard",        dashboardTab.getPanel());
+		tabs.addTab("📋 Transactions",     transactionsTab.getPanel());
+		tabs.addTab("➕ Add Transaction",  addTransactionTab.getPanel());
+		tabs.addTab("📂 Budget",           budgetTab.getPanel());
 
-		BorderPane root = new BorderPane();
-		root.setTop(header);
-		root.setCenter(tabPane);
-		root.setStyle("-fx-background-color: #1a1d2e;");
-
-		Scene scene = new Scene(root, 900, 650);
-		stage.setScene(scene);
-		stage.show();
+		frame.add(tabs, BorderLayout.CENTER);
+		frame.setVisible(true);
 	}
 
-	private HBox buildHeader() {
-		HBox header = new HBox();
-		header.setPadding(new Insets(14, 24, 14, 24));
-		header.setAlignment(Pos.CENTER_LEFT);
-		header.setSpacing(12);
-		header.setStyle("-fx-background-color: #12141f; -fx-border-color: #2a2d3e; -fx-border-width: 0 0 1 0;");
+	private JPanel buildHeader() {
+		JPanel header = new JPanel(new BorderLayout());
+		header.setBackground(new Color(18, 20, 31));
+		header.setBorder(BorderFactory.createEmptyBorder(12, 20, 12, 20));
 
-		Label icon = new Label("💰");
-		icon.setFont(Font.font(24));
+		JLabel title = new JLabel("💰 Personal Finance Tracker");
+		title.setFont(new Font("Georgia", Font.BOLD, 18));
+		title.setForeground(new Color(232, 213, 163));
 
-		Label title = new Label("Personal Finance Tracker");
-		title.setFont(Font.font("Georgia", FontWeight.BOLD, 20));
-		title.setTextFill(Color.web("#e8d5a3"));
+		JLabel owner = new JLabel("👤 " + manager.getOwnerName());
+		owner.setFont(new Font("Georgia", Font.PLAIN, 13));
+		owner.setForeground(new Color(138, 143, 168));
 
-		Region spacer = new Region();
-		HBox.setHgrow(spacer, Priority.ALWAYS);
-
-		Label owner = new Label("👤 " + manager.getOwnerName());
-		owner.setFont(Font.font("Georgia", 13));
-		owner.setTextFill(Color.web("#8a8fa8"));
-
-		header.getChildren().addAll(icon, title, spacer, owner);
+		header.add(title, BorderLayout.WEST);
+		header.add(owner, BorderLayout.EAST);
 		return header;
 	}
 
-	// called after adding/removing transactions so all tabs stay up to date
+	// called after data changes so all tabs update
 	public void refreshAll() {
 		dashboardTab.refresh();
 		transactionsTab.refresh();
 		budgetTab.refresh();
 	}
 
+	// switches to the transactions tab
 	public void goToTransactions() {
-		tabPane.getSelectionModel().select(1);
+		tabs.setSelectedIndex(1);
+	}
+
+	public JFrame getFrame() {
+		return frame;
 	}
 }
