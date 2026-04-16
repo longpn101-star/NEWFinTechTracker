@@ -1,222 +1,227 @@
 package ui;
 
-import javafx.geometry.Insets;
-import javafx.geometry.Pos;
-import javafx.scene.control.*;
-import javafx.scene.layout.*;
-import javafx.scene.paint.Color;
-import javafx.scene.text.*;
-import model.BudgetCategory;
-import model.FinanceManager;
+import model.*;
+import javax.swing.*;
+import java.awt.*;
 
-// fourth tab - shows budget categories and lets you add new ones
+// fourth tab - budget categories with progress bars and add form
 public class BudgetTab {
 
 	private FinanceManager manager;
 	private MainWindow mainWindow;
-	private Tab tab;
-	private VBox categoryList;
-	private Label feedbackLabel;
+	private JPanel panel;
+	private JPanel categoryList;
+	private JLabel feedbackLabel;
 
 	public BudgetTab(FinanceManager manager, MainWindow mainWindow) {
 		this.manager = manager;
 		this.mainWindow = mainWindow;
-		this.tab = new Tab("📂  Budget");
+		this.panel = new JPanel(new BorderLayout(0, 12));
 		buildContent();
 	}
 
-	public Tab getTab() {
-		return tab;
+	public JPanel getPanel() {
+		return panel;
 	}
 
 	public void refresh() {
 		rebuildCategoryList();
+		panel.revalidate();
+		panel.repaint();
 	}
 
 	private void buildContent() {
-		VBox root = new VBox(20);
-		root.setPadding(new Insets(24));
-		root.setStyle("-fx-background-color: #1a1d2e;");
+		panel.setBackground(new Color(26, 29, 46));
+		panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
-		Label heading = new Label("Budget Categories");
-		heading.setFont(Font.font("Georgia", FontWeight.BOLD, 22));
-		heading.setTextFill(Color.web("#e8d5a3"));
+		JLabel heading = new JLabel("Budget Categories");
+		heading.setFont(new Font("Georgia", Font.BOLD, 20));
+		heading.setForeground(new Color(232, 213, 163));
 
-		feedbackLabel = new Label("");
-		feedbackLabel.setFont(Font.font("Georgia", FontWeight.BOLD, 13));
+		feedbackLabel = new JLabel(" ");
+		feedbackLabel.setFont(new Font("Georgia", Font.BOLD, 13));
+		feedbackLabel.setForeground(new Color(39, 174, 96));
 
-		categoryList = new VBox(12);
+		JPanel topPanel = new JPanel();
+		topPanel.setLayout(new BoxLayout(topPanel, BoxLayout.Y_AXIS));
+		topPanel.setBackground(new Color(26, 29, 46));
+		topPanel.add(heading);
+		topPanel.add(Box.createVerticalStrut(4));
+		topPanel.add(feedbackLabel);
+
+		// scrollable category list
+		categoryList = new JPanel();
+		categoryList.setLayout(new BoxLayout(categoryList, BoxLayout.Y_AXIS));
+		categoryList.setBackground(new Color(26, 29, 46));
 		rebuildCategoryList();
 
-		Separator sep = new Separator();
-		sep.setStyle("-fx-background-color: #2a2d3e;");
+		JScrollPane scroll = new JScrollPane(categoryList);
+		scroll.getViewport().setBackground(new Color(26, 29, 46));
+		scroll.setBorder(BorderFactory.createEmptyBorder());
 
-		Label addHeading = new Label("Add New Category");
-		addHeading.setFont(Font.font("Georgia", FontWeight.BOLD, 16));
-		addHeading.setTextFill(Color.web("#c8ccdb"));
+		// add category form at the bottom
+		JPanel addForm = buildAddForm();
 
-		HBox addForm = buildAddForm();
-
-		root.getChildren().addAll(heading, feedbackLabel, categoryList, sep, addHeading, addForm);
-
-		ScrollPane scroll = new ScrollPane(root);
-		scroll.setFitToWidth(true);
-		scroll.setStyle("-fx-background-color: #1a1d2e; -fx-background: #1a1d2e;");
-		tab.setContent(scroll);
+		panel.add(topPanel, BorderLayout.NORTH);
+		panel.add(scroll, BorderLayout.CENTER);
+		panel.add(addForm, BorderLayout.SOUTH);
 	}
 
 	private void rebuildCategoryList() {
-		categoryList.getChildren().clear();
+		categoryList.removeAll();
 
 		if (manager.getCategories().isEmpty()) {
-			Label none = new Label("  No categories added yet.");
-			none.setFont(Font.font("Georgia", 14));
-			none.setTextFill(Color.web("#555878"));
-			categoryList.getChildren().add(none);
+			JLabel none = new JLabel("  No categories added yet.");
+			none.setFont(new Font("Georgia", Font.PLAIN, 14));
+			none.setForeground(new Color(85, 88, 120));
+			categoryList.add(none);
 			return;
 		}
 
 		for (BudgetCategory cat : manager.getCategories()) {
-			categoryList.getChildren().add(buildCategoryCard(cat));
+			categoryList.add(buildCategoryCard(cat));
+			categoryList.add(Box.createVerticalStrut(10));
 		}
 	}
 
-	private VBox buildCategoryCard(BudgetCategory cat) {
-		VBox card = new VBox(8);
-		card.setPadding(new Insets(16));
-		card.setStyle(
-				"-fx-background-color: #22253a;" +
-				"-fx-background-radius: 10;" +
-				"-fx-border-color: #2a2d3e;" +
-				"-fx-border-radius: 10;"
-		);
+	private JPanel buildCategoryCard(BudgetCategory cat) {
+		JPanel card = new JPanel();
+		card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
+		card.setBackground(new Color(34, 37, 58));
+		card.setBorder(BorderFactory.createCompoundBorder(
+				BorderFactory.createLineBorder(new Color(42, 45, 62)),
+				BorderFactory.createEmptyBorder(12, 14, 12, 14)
+		));
+		card.setMaximumSize(new Dimension(Integer.MAX_VALUE, 120));
 
-		// name and remaining amount on same line
-		HBox topRow = new HBox();
-		topRow.setAlignment(Pos.CENTER_LEFT);
+		// top row: name + remaining
+		JPanel topRow = new JPanel(new BorderLayout());
+		topRow.setBackground(new Color(34, 37, 58));
 
-		Label nameLbl = new Label(cat.getName());
-		nameLbl.setFont(Font.font("Georgia", FontWeight.BOLD, 15));
-		nameLbl.setTextFill(Color.web("#e8d5a3"));
-
-		Region spacer = new Region();
-		HBox.setHgrow(spacer, Priority.ALWAYS);
+		JLabel nameLbl = new JLabel(cat.getName());
+		nameLbl.setFont(new Font("Georgia", Font.BOLD, 14));
+		nameLbl.setForeground(new Color(232, 213, 163));
 
 		String remainText = String.format("$%.2f left of $%.2f", cat.getRemainingBudget(), cat.getBudgetLimit());
-		Label remainLbl = new Label(remainText);
-		remainLbl.setFont(Font.font("Georgia", 12));
-		remainLbl.setTextFill(cat.isOverBudget() ? Color.web("#e74c3c") : Color.web("#8a8fa8"));
+		JLabel remainLbl = new JLabel(remainText);
+		remainLbl.setFont(new Font("Georgia", Font.PLAIN, 12));
+		remainLbl.setForeground(cat.isOverBudget() ? new Color(231, 76, 60) : new Color(138, 143, 168));
 
-		topRow.getChildren().addAll(nameLbl, spacer, remainLbl);
+		topRow.add(nameLbl, BorderLayout.WEST);
+		topRow.add(remainLbl, BorderLayout.EAST);
 
-		// progress bar - color changes as it fills up
-		double pct = Math.min(cat.getUsagePercent() / 100.0, 1.0);
-		ProgressBar bar = new ProgressBar(pct);
-		bar.setMaxWidth(Double.MAX_VALUE);
-		bar.setPrefHeight(14);
+		// progress bar
+		int pct = (int) Math.min(cat.getUsagePercent(), 100);
+		JProgressBar bar = new JProgressBar(0, 100);
+		bar.setValue(pct);
+		bar.setStringPainted(false);
+		bar.setMaximumSize(new Dimension(Integer.MAX_VALUE, 12));
 
-		String barColor;
+		Color barColor = cat.isOverBudget() ? new Color(231, 76, 60)
+				       : pct > 75           ? new Color(230, 126, 34)
+				                            : new Color(39, 174, 96);
+		bar.setForeground(barColor);
+		bar.setBackground(new Color(42, 45, 62));
+		bar.setBorder(BorderFactory.createEmptyBorder());
+
+		JLabel pctLbl = new JLabel(String.format("%.1f%% used — Spent: $%.2f",
+				cat.getUsagePercent(), cat.getCurrentSpending()));
+		pctLbl.setFont(new Font("Georgia", Font.PLAIN, 11));
+		pctLbl.setForeground(new Color(85, 88, 120));
+
+		card.add(topRow);
+		card.add(Box.createVerticalStrut(6));
+		card.add(bar);
+		card.add(Box.createVerticalStrut(4));
+		card.add(pctLbl);
+
 		if (cat.isOverBudget()) {
-			barColor = "#e74c3c";
-		} else if (pct > 0.75) {
-			barColor = "#e67e22";
-		} else {
-			barColor = "#27ae60";
-		}
-		bar.setStyle("-fx-accent: " + barColor + ";");
-
-		Label pctLbl = new Label(String.format("%.1f%% used — Spent: $%.2f", cat.getUsagePercent(), cat.getCurrentSpending()));
-		pctLbl.setFont(Font.font("Georgia", 11));
-		pctLbl.setTextFill(Color.web("#555878"));
-
-		card.getChildren().addAll(topRow, bar, pctLbl);
-
-		if (cat.isOverBudget()) {
-			Label warn = new Label("⚠️  Over budget by $" + String.format("%.2f", -cat.getRemainingBudget()));
-			warn.setFont(Font.font("Georgia", FontWeight.BOLD, 12));
-			warn.setTextFill(Color.web("#e74c3c"));
-			card.getChildren().add(warn);
+			JLabel warn = new JLabel("⚠️  Over budget by $" + String.format("%.2f", -cat.getRemainingBudget()));
+			warn.setFont(new Font("Georgia", Font.BOLD, 12));
+			warn.setForeground(new Color(231, 76, 60));
+			card.add(Box.createVerticalStrut(4));
+			card.add(warn);
 		}
 
 		return card;
 	}
 
-	private HBox buildAddForm() {
-		HBox form = new HBox(12);
-		form.setAlignment(Pos.CENTER_LEFT);
-		form.setPadding(new Insets(12, 0, 0, 0));
+	private JPanel buildAddForm() {
+		JPanel form = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 8));
+		form.setBackground(new Color(26, 29, 46));
+		form.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(42, 45, 62)));
 
-		TextField nameField  = tf("Category name");
-		TextField limitField = tf("Budget limit ($)");
+		JLabel addHeading = new JLabel("Add New Category:");
+		addHeading.setFont(new Font("Georgia", Font.BOLD, 13));
+		addHeading.setForeground(new Color(200, 204, 219));
 
-		Button addBtn = makeButton("Add Category", "#2a6496");
-		addBtn.setOnAction(e -> {
+		JTextField nameField  = tf("Category name");
+		JTextField limitField = tf("Budget limit ($)");
+		nameField.setPreferredSize(new Dimension(160, 28));
+		limitField.setPreferredSize(new Dimension(130, 28));
+
+		JButton addBtn = makeButton("Add Category", new Color(42, 100, 150));
+		addBtn.addActionListener(e -> {
 			String name = nameField.getText().trim();
 			String limitStr = limitField.getText().trim();
-
 			if (name.isEmpty() || limitStr.isEmpty()) {
 				showError("Please fill in both fields.");
 				return;
 			}
-
 			try {
 				double limit = Double.parseDouble(limitStr);
 				if (limit <= 0) throw new NumberFormatException();
 				manager.addCategory(new BudgetCategory(name, limit));
-				nameField.clear();
-				limitField.clear();
+				nameField.setText("");
+				limitField.setText("");
 				mainWindow.refreshAll();
 				showSuccess("Category '" + name + "' added!");
 			} catch (NumberFormatException ex) {
-				showError("Please enter a valid limit amount.");
+				showError("Please enter a valid limit.");
 			}
 		});
 
-		form.getChildren().addAll(fieldLabel("Name:"), nameField, fieldLabel("Limit ($):"), limitField, addBtn);
+		form.add(addHeading);
+		form.add(new JLabel("Name:") {{ setForeground(new Color(138, 143, 168)); setFont(new Font("Georgia", Font.PLAIN, 13)); }});
+		form.add(nameField);
+		form.add(new JLabel("Limit ($):") {{ setForeground(new Color(138, 143, 168)); setFont(new Font("Georgia", Font.PLAIN, 13)); }});
+		form.add(limitField);
+		form.add(addBtn);
+
 		return form;
 	}
 
-	private TextField tf(String prompt) {
-		TextField tf = new TextField();
-		tf.setPromptText(prompt);
-		tf.setPrefWidth(180);
-		tf.setStyle(
-				"-fx-background-color: #2a2d3e;" +
-				"-fx-text-fill: #c8ccdb;" +
-				"-fx-prompt-text-fill: #555878;" +
-				"-fx-border-color: #3a3d5e;" +
-				"-fx-border-radius: 6;" +
-				"-fx-background-radius: 6;" +
-				"-fx-padding: 8 10 8 10;"
-		);
+	private JTextField tf(String prompt) {
+		JTextField tf = new JTextField();
+		tf.setFont(new Font("Georgia", Font.PLAIN, 13));
+		tf.setBackground(new Color(42, 45, 62));
+		tf.setForeground(new Color(200, 204, 219));
+		tf.setCaretColor(Color.WHITE);
+		tf.setBorder(BorderFactory.createCompoundBorder(
+				BorderFactory.createLineBorder(new Color(58, 61, 94)),
+				BorderFactory.createEmptyBorder(4, 8, 4, 8)));
+		tf.setToolTipText(prompt);
 		return tf;
 	}
 
-	private Label fieldLabel(String text) {
-		Label l = new Label(text);
-		l.setFont(Font.font("Georgia", 13));
-		l.setTextFill(Color.web("#8a8fa8"));
-		return l;
-	}
-
-	private Button makeButton(String text, String color) {
-		Button btn = new Button(text);
-		btn.setFont(Font.font("Georgia", FontWeight.BOLD, 13));
-		btn.setTextFill(Color.WHITE);
-		btn.setPadding(new Insets(10, 20, 10, 20));
-		btn.setStyle("-fx-background-color: " + color + "; -fx-background-radius: 8; -fx-cursor: hand;");
-		btn.setOnMouseEntered(e -> btn.setOpacity(0.85));
-		btn.setOnMouseExited(e -> btn.setOpacity(1.0));
+	private JButton makeButton(String text, Color color) {
+		JButton btn = new JButton(text);
+		btn.setFont(new Font("Georgia", Font.BOLD, 13));
+		btn.setBackground(color);
+		btn.setForeground(Color.WHITE);
+		btn.setFocusPainted(false);
+		btn.setBorderPainted(false);
+		btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
 		return btn;
 	}
 
 	private void showSuccess(String msg) {
-		feedbackLabel.setTextFill(Color.web("#27ae60"));
+		feedbackLabel.setForeground(new Color(39, 174, 96));
 		feedbackLabel.setText("✅ " + msg);
 	}
 
 	private void showError(String msg) {
-		feedbackLabel.setTextFill(Color.web("#e74c3c"));
+		feedbackLabel.setForeground(new Color(231, 76, 60));
 		feedbackLabel.setText("❌ " + msg);
 	}
 }
