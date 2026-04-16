@@ -5,7 +5,7 @@ import java.time.LocalDate;
 /**
  * Entry point for the Personal Finance Tracker application.
  * Initializes the manager and launches the console UI.
- */
+ *///max sucks
 public class Main {
  
     public static void main(String[] args) {
