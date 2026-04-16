@@ -1,86 +1,77 @@
 package ui;
 
-import javafx.geometry.Insets;
-import javafx.geometry.Pos;
-import javafx.scene.control.*;
-import javafx.scene.layout.*;
-import javafx.scene.paint.Color;
-import javafx.scene.text.*;
 import model.*;
+import javax.swing.*;
+import java.awt.*;
 import java.time.LocalDate;
 
 // third tab - forms to add new transactions
-// has a sub-tab for each transaction type
+// uses a JTabbedPane inside the tab for each transaction type
 public class AddTransactionTab {
 
 	private FinanceManager manager;
 	private MainWindow mainWindow;
-	private Tab tab;
-	private Label feedbackLabel;
+	private JPanel panel;
+	private JLabel feedbackLabel;
 
 	public AddTransactionTab(FinanceManager manager, MainWindow mainWindow) {
 		this.manager = manager;
 		this.mainWindow = mainWindow;
-		this.tab = new Tab("➕  Add Transaction");
+		this.panel = new JPanel(new BorderLayout(0, 12));
 		buildContent();
 	}
 
-	public Tab getTab() {
-		return tab;
+	public JPanel getPanel() {
+		return panel;
 	}
 
 	private void buildContent() {
-		VBox root = new VBox(16);
-		root.setPadding(new Insets(24));
-		root.setStyle("-fx-background-color: #1a1d2e;");
+		panel.setBackground(new Color(26, 29, 46));
+		panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
-		Label heading = new Label("Add New Transaction");
-		heading.setFont(Font.font("Georgia", FontWeight.BOLD, 22));
-		heading.setTextFill(Color.web("#e8d5a3"));
+		JLabel heading = new JLabel("Add New Transaction");
+		heading.setFont(new Font("Georgia", Font.BOLD, 20));
+		heading.setForeground(new Color(232, 213, 163));
 
-		// shows success or error after submitting a form
-		feedbackLabel = new Label("");
-		feedbackLabel.setFont(Font.font("Georgia", FontWeight.BOLD, 13));
+		feedbackLabel = new JLabel(" ");
+		feedbackLabel.setFont(new Font("Georgia", Font.BOLD, 13));
+		feedbackLabel.setForeground(new Color(39, 174, 96));
 
-		TabPane formTabs = new TabPane();
-		formTabs.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
-		formTabs.setStyle("-fx-background-color: #22253a;");
-		formTabs.getTabs().addAll(
-				buildIncomeForm(),
-				buildExpenseForm(),
-				buildInvestmentForm(),
-				buildDebtForm()
-		);
+		JPanel topPanel = new JPanel();
+		topPanel.setLayout(new BoxLayout(topPanel, BoxLayout.Y_AXIS));
+		topPanel.setBackground(new Color(26, 29, 46));
+		topPanel.add(heading);
+		topPanel.add(Box.createVerticalStrut(6));
+		topPanel.add(feedbackLabel);
 
-		root.getChildren().addAll(heading, feedbackLabel, formTabs);
+		// sub-tabs for each transaction type
+		JTabbedPane formTabs = new JTabbedPane();
+		formTabs.setFont(new Font("Georgia", Font.PLAIN, 13));
+		formTabs.setBackground(new Color(26, 29, 46));
 
-		ScrollPane scroll = new ScrollPane(root);
-		scroll.setFitToWidth(true);
-		scroll.setStyle("-fx-background-color: #1a1d2e; -fx-background: #1a1d2e;");
-		tab.setContent(scroll);
+		formTabs.addTab("💵 Income",      buildIncomeForm());
+		formTabs.addTab("🛒 Expense",     buildExpenseForm());
+		formTabs.addTab("📈 Investment",  buildInvestmentForm());
+		formTabs.addTab("⚠️ Debt",        buildDebtForm());
+
+		panel.add(topPanel, BorderLayout.NORTH);
+		panel.add(formTabs, BorderLayout.CENTER);
 	}
 
-	private Tab buildIncomeForm() {
-		Tab t = new Tab("💵  Income");
-		GridPane grid = makeGrid();
+	private JPanel buildIncomeForm() {
+		JTextField descField   = tf("e.g. Monthly Salary");
+		JTextField amountField = tf("e.g. 3200.00");
+		JTextField sourceField = tf("e.g. Employer, Freelance");
+		JTextField catField    = tf("e.g. Employment");
+		JCheckBox  recurChk    = new JCheckBox("Recurring monthly income");
+		recurChk.setBackground(new Color(26, 29, 46));
+		recurChk.setForeground(new Color(200, 204, 219));
+		recurChk.setFont(new Font("Georgia", Font.PLAIN, 13));
 
-		TextField descField   = tf("e.g. Monthly Salary");
-		TextField amountField = tf("e.g. 3200.00");
-		TextField sourceField = tf("e.g. Employer, Freelance");
-		TextField catField    = tf("e.g. Employment");
-		CheckBox recurChk     = new CheckBox("Recurring monthly income");
-		recurChk.setTextFill(Color.web("#c8ccdb"));
+		JButton addBtn   = makeButton("Add Income", new Color(39, 174, 96));
+		JButton clearBtn = makeClearButton();
 
-		addRow(grid, 0, "Description:", descField);
-		addRow(grid, 1, "Amount ($):",  amountField);
-		addRow(grid, 2, "Source:",      sourceField);
-		addRow(grid, 3, "Category:",    catField);
-		grid.add(recurChk, 1, 4);
-
-		Button addBtn   = makeButton("Add Income", "#27ae60");
-		Button clearBtn = makeClearButton();
-
-		addBtn.setOnAction(e -> {
+		addBtn.addActionListener(e -> {
 			try {
 				double amt = Double.parseDouble(amountField.getText().trim());
 				if (amt <= 0) throw new NumberFormatException();
@@ -96,33 +87,29 @@ public class AddTransactionTab {
 				showError("Please enter a valid positive amount.");
 			}
 		});
-		clearBtn.setOnAction(e -> clearFields(descField, amountField, sourceField, catField));
+		clearBtn.addActionListener(e -> clearFields(descField, amountField, sourceField, catField));
 
-		t.setContent(makeFormBox(grid, makeButtonRow(addBtn, clearBtn)));
-		return t;
+		return buildForm(
+			new String[]{"Description:", "Amount ($):", "Source:", "Category:"},
+			new JTextField[]{descField, amountField, sourceField, catField},
+			recurChk, addBtn, clearBtn
+		);
 	}
 
-	private Tab buildExpenseForm() {
-		Tab t = new Tab("🛒  Expense");
-		GridPane grid = makeGrid();
+	private JPanel buildExpenseForm() {
+		JTextField descField   = tf("e.g. Grocery Run");
+		JTextField amountField = tf("e.g. 87.50");
+		JTextField methodField = tf("e.g. Debit Card, Cash");
+		JTextField catField    = tf("e.g. Food");
+		JCheckBox  necChk      = new JCheckBox("This is a necessity");
+		necChk.setBackground(new Color(26, 29, 46));
+		necChk.setForeground(new Color(200, 204, 219));
+		necChk.setFont(new Font("Georgia", Font.PLAIN, 13));
 
-		TextField descField   = tf("e.g. Grocery Run");
-		TextField amountField = tf("e.g. 87.50");
-		TextField methodField = tf("e.g. Debit Card, Cash");
-		TextField catField    = tf("e.g. Food");
-		CheckBox necChk       = new CheckBox("This is a necessity");
-		necChk.setTextFill(Color.web("#c8ccdb"));
+		JButton addBtn   = makeButton("Add Expense", new Color(230, 126, 34));
+		JButton clearBtn = makeClearButton();
 
-		addRow(grid, 0, "Description:",    descField);
-		addRow(grid, 1, "Amount ($):",     amountField);
-		addRow(grid, 2, "Payment Method:", methodField);
-		addRow(grid, 3, "Category:",       catField);
-		grid.add(necChk, 1, 4);
-
-		Button addBtn   = makeButton("Add Expense", "#e67e22");
-		Button clearBtn = makeClearButton();
-
-		addBtn.setOnAction(e -> {
+		addBtn.addActionListener(e -> {
 			try {
 				double amt = Double.parseDouble(amountField.getText().trim());
 				if (amt <= 0) throw new NumberFormatException();
@@ -138,30 +125,25 @@ public class AddTransactionTab {
 				showError("Please enter a valid positive amount.");
 			}
 		});
-		clearBtn.setOnAction(e -> clearFields(descField, amountField, methodField, catField));
+		clearBtn.addActionListener(e -> clearFields(descField, amountField, methodField, catField));
 
-		t.setContent(makeFormBox(grid, makeButtonRow(addBtn, clearBtn)));
-		return t;
+		return buildForm(
+			new String[]{"Description:", "Amount ($):", "Payment Method:", "Category:"},
+			new JTextField[]{descField, amountField, methodField, catField},
+			necChk, addBtn, clearBtn
+		);
 	}
 
-	private Tab buildInvestmentForm() {
-		Tab t = new Tab("📈  Investment");
-		GridPane grid = makeGrid();
+	private JPanel buildInvestmentForm() {
+		JTextField descField   = tf("e.g. S&P 500 ETF");
+		JTextField amountField = tf("e.g. 500.00");
+		JTextField typeField   = tf("e.g. ETF, Stocks, Crypto");
+		JTextField retField    = tf("e.g. 7.5");
 
-		TextField descField   = tf("e.g. S&P 500 ETF");
-		TextField amountField = tf("e.g. 500.00");
-		TextField typeField   = tf("e.g. ETF, Stocks, Crypto");
-		TextField retField    = tf("e.g. 7.5");
+		JButton addBtn   = makeButton("Add Investment", new Color(142, 68, 173));
+		JButton clearBtn = makeClearButton();
 
-		addRow(grid, 0, "Description:",         descField);
-		addRow(grid, 1, "Amount ($):",          amountField);
-		addRow(grid, 2, "Investment Type:",     typeField);
-		addRow(grid, 3, "Expected Return (%):", retField);
-
-		Button addBtn   = makeButton("Add Investment", "#8e44ad");
-		Button clearBtn = makeClearButton();
-
-		addBtn.setOnAction(e -> {
+		addBtn.addActionListener(e -> {
 			try {
 				double amt = Double.parseDouble(amountField.getText().trim());
 				double ret = Double.parseDouble(retField.getText().trim());
@@ -176,32 +158,26 @@ public class AddTransactionTab {
 				showError("Please enter valid numbers.");
 			}
 		});
-		clearBtn.setOnAction(e -> clearFields(descField, amountField, typeField, retField));
+		clearBtn.addActionListener(e -> clearFields(descField, amountField, typeField, retField));
 
-		t.setContent(makeFormBox(grid, makeButtonRow(addBtn, clearBtn)));
-		return t;
+		return buildForm(
+			new String[]{"Description:", "Amount ($):", "Investment Type:", "Expected Return (%):"},
+			new JTextField[]{descField, amountField, typeField, retField},
+			null, addBtn, clearBtn
+		);
 	}
 
-	private Tab buildDebtForm() {
-		Tab t = new Tab("⚠️  Debt");
-		GridPane grid = makeGrid();
+	private JPanel buildDebtForm() {
+		JTextField descField   = tf("e.g. Student Loan");
+		JTextField amountField = tf("e.g. 15000.00");
+		JTextField rateField   = tf("e.g. 4.5");
+		JTextField catField    = tf("e.g. Education");
+		JTextField monthsField = tf("e.g. 60");
 
-		TextField descField   = tf("e.g. Student Loan");
-		TextField amountField = tf("e.g. 15000.00");
-		TextField rateField   = tf("e.g. 4.5");
-		TextField catField    = tf("e.g. Education");
-		TextField monthsField = tf("e.g. 60");
+		JButton addBtn   = makeButton("Add Debt", new Color(192, 57, 43));
+		JButton clearBtn = makeClearButton();
 
-		addRow(grid, 0, "Description:",        descField);
-		addRow(grid, 1, "Principal ($):",      amountField);
-		addRow(grid, 2, "Interest Rate (%):",  rateField);
-		addRow(grid, 3, "Category:",           catField);
-		addRow(grid, 4, "Repayment (months):", monthsField);
-
-		Button addBtn   = makeButton("Add Debt", "#c0392b");
-		Button clearBtn = makeClearButton();
-
-		addBtn.setOnAction(e -> {
+		addBtn.addActionListener(e -> {
 			try {
 				double amt  = Double.parseDouble(amountField.getText().trim());
 				double rate = Double.parseDouble(rateField.getText().trim());
@@ -218,97 +194,103 @@ public class AddTransactionTab {
 				showError("Please enter valid numbers.");
 			}
 		});
-		clearBtn.setOnAction(e -> clearFields(descField, amountField, rateField, catField, monthsField));
+		clearBtn.addActionListener(e -> clearFields(descField, amountField, rateField, catField, monthsField));
 
-		t.setContent(makeFormBox(grid, makeButtonRow(addBtn, clearBtn)));
-		return t;
-	}
-
-	// helper methods to keep the form building code cleaner
-	private GridPane makeGrid() {
-		GridPane grid = new GridPane();
-		grid.setHgap(16);
-		grid.setVgap(14);
-		grid.setPadding(new Insets(20, 0, 20, 0));
-		grid.getColumnConstraints().addAll(
-				new ColumnConstraints(180),
-				new ColumnConstraints(320)
+		return buildForm(
+			new String[]{"Description:", "Principal ($):", "Interest Rate (%):", "Category:", "Repayment (months):"},
+			new JTextField[]{descField, amountField, rateField, catField, monthsField},
+			null, addBtn, clearBtn
 		);
-		return grid;
 	}
 
-	private void addRow(GridPane grid, int row, String labelText, Control field) {
-		Label lbl = new Label(labelText);
-		lbl.setFont(Font.font("Georgia", 13));
-		lbl.setTextFill(Color.web("#8a8fa8"));
-		lbl.setMaxWidth(Double.MAX_VALUE);
-		lbl.setAlignment(Pos.CENTER_RIGHT);
-		grid.add(lbl, 0, row);
-		grid.add(field, 1, row);
+	// builds a standard form panel from labels, fields, optional checkbox, and buttons
+	private JPanel buildForm(String[] labels, JTextField[] fields, JCheckBox checkbox, JButton addBtn, JButton clearBtn) {
+		JPanel form = new JPanel(new GridBagLayout());
+		form.setBackground(new Color(26, 29, 46));
+		form.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+
+		GridBagConstraints gc = new GridBagConstraints();
+		gc.insets = new Insets(6, 6, 6, 6);
+		gc.fill = GridBagConstraints.HORIZONTAL;
+
+		for (int i = 0; i < labels.length; i++) {
+			gc.gridx = 0; gc.gridy = i; gc.weightx = 0;
+			JLabel lbl = new JLabel(labels[i]);
+			lbl.setFont(new Font("Georgia", Font.PLAIN, 13));
+			lbl.setForeground(new Color(138, 143, 168));
+			form.add(lbl, gc);
+
+			gc.gridx = 1; gc.weightx = 1;
+			form.add(fields[i], gc);
+		}
+
+		if (checkbox != null) {
+			gc.gridx = 1; gc.gridy = labels.length; gc.weightx = 1;
+			form.add(checkbox, gc);
+		}
+
+		JPanel btnRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+		btnRow.setBackground(new Color(26, 29, 46));
+		btnRow.add(addBtn);
+		btnRow.add(clearBtn);
+
+		gc.gridx = 1; gc.gridy = labels.length + (checkbox != null ? 1 : 0); gc.weightx = 1;
+		form.add(btnRow, gc);
+
+		// filler to push everything up
+		gc.gridx = 0; gc.gridy = labels.length + 2; gc.weighty = 1; gc.gridwidth = 2;
+		form.add(Box.createVerticalGlue(), gc);
+
+		return form;
 	}
 
-	private TextField tf(String prompt) {
-		TextField tf = new TextField();
-		tf.setPromptText(prompt);
-		tf.setStyle(
-				"-fx-background-color: #2a2d3e;" +
-				"-fx-text-fill: #c8ccdb;" +
-				"-fx-prompt-text-fill: #555878;" +
-				"-fx-border-color: #3a3d5e;" +
-				"-fx-border-radius: 6;" +
-				"-fx-background-radius: 6;" +
-				"-fx-padding: 8 10 8 10;"
-		);
+	private JTextField tf(String prompt) {
+		JTextField tf = new JTextField();
+		tf.setFont(new Font("Georgia", Font.PLAIN, 13));
+		tf.setBackground(new Color(42, 45, 62));
+		tf.setForeground(new Color(200, 204, 219));
+		tf.setCaretColor(Color.WHITE);
+		tf.setBorder(BorderFactory.createCompoundBorder(
+				BorderFactory.createLineBorder(new Color(58, 61, 94)),
+				BorderFactory.createEmptyBorder(4, 8, 4, 8)));
+		tf.setToolTipText(prompt);
 		return tf;
 	}
 
-	private Button makeButton(String text, String color) {
-		Button btn = new Button(text);
-		btn.setFont(Font.font("Georgia", FontWeight.BOLD, 13));
-		btn.setTextFill(Color.WHITE);
-		btn.setPadding(new Insets(10, 24, 10, 24));
-		btn.setStyle("-fx-background-color: " + color + "; -fx-background-radius: 8; -fx-cursor: hand;");
-		btn.setOnMouseEntered(e -> btn.setOpacity(0.85));
-		btn.setOnMouseExited(e -> btn.setOpacity(1.0));
+	private JButton makeButton(String text, Color color) {
+		JButton btn = new JButton(text);
+		btn.setFont(new Font("Georgia", Font.BOLD, 13));
+		btn.setBackground(color);
+		btn.setForeground(Color.WHITE);
+		btn.setFocusPainted(false);
+		btn.setBorderPainted(false);
+		btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
 		return btn;
 	}
 
-	private Button makeClearButton() {
-		Button btn = new Button("Clear");
-		btn.setFont(Font.font("Georgia", 13));
-		btn.setTextFill(Color.web("#c8ccdb"));
-		btn.setPadding(new Insets(9, 18, 9, 18));
-		btn.setStyle("-fx-background-color: #2a2d3e; -fx-background-radius: 8; -fx-cursor: hand;");
-		btn.setOnMouseEntered(e -> btn.setOpacity(0.75));
-		btn.setOnMouseExited(e -> btn.setOpacity(1.0));
+	private JButton makeClearButton() {
+		JButton btn = new JButton("Clear");
+		btn.setFont(new Font("Georgia", Font.PLAIN, 13));
+		btn.setBackground(new Color(42, 45, 62));
+		btn.setForeground(new Color(200, 204, 219));
+		btn.setFocusPainted(false);
+		btn.setBorderPainted(false);
+		btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
 		return btn;
 	}
 
-	private HBox makeButtonRow(Button... buttons) {
-		HBox row = new HBox(12, buttons);
-		row.setAlignment(Pos.CENTER_LEFT);
-		return row;
-	}
-
-	private VBox makeFormBox(GridPane grid, HBox buttons) {
-		VBox box = new VBox(12, grid, buttons);
-		box.setPadding(new Insets(24));
-		box.setStyle("-fx-background-color: #1a1d2e;");
-		return box;
-	}
-
-	private void clearFields(TextField... fields) {
-		for (TextField f : fields) f.clear();
-		feedbackLabel.setText("");
+	private void clearFields(JTextField... fields) {
+		for (JTextField f : fields) f.setText("");
+		feedbackLabel.setText(" ");
 	}
 
 	private void showSuccess(String msg) {
-		feedbackLabel.setTextFill(Color.web("#27ae60"));
+		feedbackLabel.setForeground(new Color(39, 174, 96));
 		feedbackLabel.setText("✅ " + msg);
 	}
 
 	private void showError(String msg) {
-		feedbackLabel.setTextFill(Color.web("#e74c3c"));
+		feedbackLabel.setForeground(new Color(231, 76, 60));
 		feedbackLabel.setText("❌ " + msg);
 	}
 }
