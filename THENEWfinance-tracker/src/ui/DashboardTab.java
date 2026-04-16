@@ -1,67 +1,80 @@
 package ui;
 
-import javafx.geometry.Insets;
-import javafx.geometry.Pos;
-import javafx.scene.control.*;
-import javafx.scene.layout.*;
-import javafx.scene.paint.Color;
-import javafx.scene.text.*;
 import model.*;
+import javax.swing.*;
+import javax.swing.border.*;
+import java.awt.*;
 import java.util.ArrayList;
 
-// first tab - shows a summary of the finances and recent transactions
+// first tab - summary cards and recent transactions
 public class DashboardTab {
 
 	private FinanceManager manager;
 	private MainWindow mainWindow;
-	private Tab tab;
+	private JPanel panel;
 
 	public DashboardTab(FinanceManager manager, MainWindow mainWindow) {
 		this.manager = manager;
 		this.mainWindow = mainWindow;
-		this.tab = new Tab("📊  Dashboard");
+		this.panel = new JPanel();
 		buildContent();
 	}
 
-	public Tab getTab() {
-		return tab;
+	public JPanel getPanel() {
+		return panel;
 	}
 
-	// called when data changes so the dashboard updates
 	public void refresh() {
+		panel.removeAll();
 		buildContent();
+		panel.revalidate();
+		panel.repaint();
 	}
 
 	private void buildContent() {
-		VBox root = new VBox(20);
-		root.setPadding(new Insets(24));
-		root.setStyle("-fx-background-color: #1a1d2e;");
+		panel.setLayout(new BorderLayout(0, 16));
+		panel.setBackground(new Color(26, 29, 46));
+		panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
-		Label heading = new Label("Financial Overview");
-		heading.setFont(Font.font("Georgia", FontWeight.BOLD, 22));
-		heading.setTextFill(Color.web("#e8d5a3"));
+		// heading
+		JLabel heading = new JLabel("Financial Overview");
+		heading.setFont(new Font("Georgia", Font.BOLD, 20));
+		heading.setForeground(new Color(232, 213, 163));
+		heading.setBorder(BorderFactory.createEmptyBorder(0, 0, 8, 0));
 
-		HBox cards = buildSummaryCards();
+		// summary cards
+		JPanel cards = buildSummaryCards();
 
-		Label recentLabel = new Label("Recent Transactions");
-		recentLabel.setFont(Font.font("Georgia", FontWeight.BOLD, 16));
-		recentLabel.setTextFill(Color.web("#c8ccdb"));
+		// recent transactions area
+		JLabel recentLabel = new JLabel("Recent Transactions");
+		recentLabel.setFont(new Font("Georgia", Font.BOLD, 15));
+		recentLabel.setForeground(new Color(200, 204, 219));
 
-		TextArea recentArea = buildRecentList();
+		JTextArea recentArea = buildRecentList();
+		JScrollPane recentScroll = new JScrollPane(recentArea);
+		recentScroll.setBorder(BorderFactory.createLineBorder(new Color(42, 45, 62)));
+		recentScroll.setPreferredSize(new Dimension(0, 160));
 
-		Button viewAllBtn = makeButton("View All Transactions", "#2a6496");
-		viewAllBtn.setOnAction(e -> mainWindow.goToTransactions());
+		// view all button
+		JButton viewAllBtn = makeButton("View All Transactions", new Color(42, 100, 150));
+		viewAllBtn.addActionListener(e -> mainWindow.goToTransactions());
 
-		root.getChildren().addAll(heading, cards, recentLabel, recentArea, viewAllBtn);
+		// center panel stacks everything
+		JPanel center = new JPanel();
+		center.setLayout(new BoxLayout(center, BoxLayout.Y_AXIS));
+		center.setBackground(new Color(26, 29, 46));
+		center.add(recentLabel);
+		center.add(Box.createVerticalStrut(8));
+		center.add(recentScroll);
+		center.add(Box.createVerticalStrut(12));
+		center.add(viewAllBtn);
 
-		ScrollPane scroll = new ScrollPane(root);
-		scroll.setFitToWidth(true);
-		scroll.setStyle("-fx-background-color: #1a1d2e; -fx-background: #1a1d2e;");
-		tab.setContent(scroll);
+		panel.add(heading, BorderLayout.NORTH);
+		panel.add(cards, BorderLayout.CENTER);
+		panel.add(center, BorderLayout.SOUTH);
 	}
 
-	private HBox buildSummaryCards() {
-		// calculate totals from all transactions
+	private JPanel buildSummaryCards() {
 		double totalIncome = 0, totalExpenses = 0, totalInvested = 0, totalDebt = 0;
 		for (Transaction t : manager.getTransactions()) {
 			switch (t.getType()) {
@@ -73,44 +86,43 @@ public class DashboardTab {
 		}
 		double netBalance = manager.getStartingBalance() + totalIncome - totalExpenses - totalInvested;
 
-		HBox cards = new HBox(16);
-		cards.setAlignment(Pos.CENTER_LEFT);
-		cards.getChildren().addAll(
-				makeCard("💵 Net Balance",  String.format("$%.2f", netBalance),  netBalance >= 0 ? "#27ae60" : "#e74c3c"),
-				makeCard("📈 Income",       String.format("$%.2f", totalIncome),  "#2980b9"),
-				makeCard("📉 Expenses",     String.format("$%.2f", totalExpenses),"#e67e22"),
-				makeCard("🏦 Invested",     String.format("$%.2f", totalInvested),"#8e44ad"),
-				makeCard("⚠️ Debt",         String.format("$%.2f", totalDebt),    "#c0392b")
-		);
+		JPanel cards = new JPanel(new GridLayout(1, 5, 12, 0));
+		cards.setBackground(new Color(26, 29, 46));
+		cards.setBorder(BorderFactory.createEmptyBorder(0, 0, 16, 0));
+
+		cards.add(makeCard("Net Balance",  String.format("$%.2f", netBalance),  netBalance >= 0 ? new Color(39, 174, 96) : new Color(231, 76, 60)));
+		cards.add(makeCard("Income",       String.format("$%.2f", totalIncome),  new Color(41, 128, 185)));
+		cards.add(makeCard("Expenses",     String.format("$%.2f", totalExpenses),new Color(230, 126, 34)));
+		cards.add(makeCard("Invested",     String.format("$%.2f", totalInvested),new Color(142, 68, 173)));
+		cards.add(makeCard("Debt",         String.format("$%.2f", totalDebt),    new Color(192, 57, 43)));
+
 		return cards;
 	}
 
-	private VBox makeCard(String title, String value, String color) {
-		VBox card = new VBox(6);
-		card.setPadding(new Insets(16, 20, 16, 20));
-		card.setAlignment(Pos.CENTER_LEFT);
-		card.setPrefWidth(155);
-		card.setStyle(
-				"-fx-background-color: #22253a;" +
-				"-fx-background-radius: 10;" +
-				"-fx-border-color: " + color + ";" +
-				"-fx-border-width: 0 0 0 4;" +
-				"-fx-border-radius: 10;"
-		);
+	private JPanel makeCard(String title, String value, Color color) {
+		JPanel card = new JPanel();
+		card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
+		card.setBackground(new Color(34, 37, 58));
+		card.setBorder(BorderFactory.createCompoundBorder(
+				BorderFactory.createMatteBorder(0, 4, 0, 0, color),
+				BorderFactory.createEmptyBorder(12, 12, 12, 12)
+		));
 
-		Label titleLbl = new Label(title);
-		titleLbl.setFont(Font.font("Georgia", 11));
-		titleLbl.setTextFill(Color.web("#8a8fa8"));
+		JLabel titleLbl = new JLabel(title);
+		titleLbl.setFont(new Font("Georgia", Font.PLAIN, 11));
+		titleLbl.setForeground(new Color(138, 143, 168));
 
-		Label valueLbl = new Label(value);
-		valueLbl.setFont(Font.font("Georgia", FontWeight.BOLD, 16));
-		valueLbl.setTextFill(Color.web(color));
+		JLabel valueLbl = new JLabel(value);
+		valueLbl.setFont(new Font("Georgia", Font.BOLD, 15));
+		valueLbl.setForeground(color);
 
-		card.getChildren().addAll(titleLbl, valueLbl);
+		card.add(titleLbl);
+		card.add(Box.createVerticalStrut(4));
+		card.add(valueLbl);
 		return card;
 	}
 
-	private TextArea buildRecentList() {
+	private JTextArea buildRecentList() {
 		ArrayList<Transaction> all = manager.getTransactions();
 		StringBuilder sb = new StringBuilder();
 
@@ -122,33 +134,26 @@ public class DashboardTab {
 					t.getType(), t.getDescription(), t.getAmount(),
 					t.getDate().format(java.time.format.DateTimeFormatter.ofPattern("MMM dd, yyyy"))));
 		}
-		if (sb.length() == 0) {
-			sb.append("  No transactions yet.");
-		}
+		if (sb.length() == 0) sb.append("  No transactions yet.");
 
-		TextArea area = new TextArea(sb.toString());
+		JTextArea area = new JTextArea(sb.toString());
 		area.setEditable(false);
-		area.setPrefHeight(150);
-		area.setFont(Font.font("Monospaced", 13));
-		area.setStyle(
-				"-fx-control-inner-background: #22253a;" +
-				"-fx-text-fill: #c8ccdb;" +
-				"-fx-background-color: #22253a;" +
-				"-fx-border-color: #2a2d3e;" +
-				"-fx-border-radius: 6;" +
-				"-fx-background-radius: 6;"
-		);
+		area.setFont(new Font("Monospaced", Font.PLAIN, 12));
+		area.setBackground(new Color(34, 37, 58));
+		area.setForeground(new Color(200, 204, 219));
+		area.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
 		return area;
 	}
 
-	private Button makeButton(String text, String color) {
-		Button btn = new Button(text);
-		btn.setFont(Font.font("Georgia", FontWeight.BOLD, 13));
-		btn.setTextFill(Color.WHITE);
-		btn.setPadding(new Insets(10, 22, 10, 22));
-		btn.setStyle("-fx-background-color: " + color + "; -fx-background-radius: 8; -fx-cursor: hand;");
-		btn.setOnMouseEntered(e -> btn.setOpacity(0.85));
-		btn.setOnMouseExited(e -> btn.setOpacity(1.0));
+	private JButton makeButton(String text, Color color) {
+		JButton btn = new JButton(text);
+		btn.setFont(new Font("Georgia", Font.BOLD, 13));
+		btn.setBackground(color);
+		btn.setForeground(Color.WHITE);
+		btn.setFocusPainted(false);
+		btn.setBorderPainted(false);
+		btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+		btn.setAlignmentX(Component.LEFT_ALIGNMENT);
 		return btn;
 	}
 }
