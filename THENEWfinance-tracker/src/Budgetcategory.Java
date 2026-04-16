@@ -13,7 +13,7 @@ public class BudgetCategory {
     public BudgetCategory(String name, double budgetLimit) {
         this.name = name;
         this.budgetLimit = budgetLimit;
-        this.currentSpending = 0.0;//max sucks
+        this.currentSpending = 0.0;//max sucks 
     }
 
     /**
