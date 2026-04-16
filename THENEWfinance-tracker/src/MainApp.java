@@ -1,17 +1,13 @@
-import javafx.application.Application;
-import javafx.stage.Stage;
 import model.*;
 import ui.MainWindow;
 import java.time.LocalDate;
 
-// Phase 3 - JavaFX entry point
-// run with: java --module-path /usr/share/java --add-modules javafx.controls,javafx.graphics,javafx.base -cp out MainApp
-public class MainApp extends Application {
+// Phase 3 - Swing GUI entry point (no JavaFX needed)
+public class MainApp {
 
-	@Override
-	public void start(Stage primaryStage) {
+	public static void main(String[] args) {
 
-		// same setup as Main.java but launches the GUI instead
+		// create the manager with sample data
 		FinanceManager manager = new FinanceManager("Max", 2500.00);
 
 		manager.addCategory(new BudgetCategory("Food", 400.00));
@@ -40,11 +36,10 @@ public class MainApp extends Application {
 				"Credit Card Balance", 850.00, LocalDate.now().minusMonths(1), "Credit", 19.99,
 				LocalDate.now().plusMonths(3)));
 
-		MainWindow window = new MainWindow(manager);
-		window.show(primaryStage);
-	}
-
-	public static void main(String[] args) {
-		launch(args);
+		// launch the Swing GUI on the event dispatch thread
+		javax.swing.SwingUtilities.invokeLater(() -> {
+			MainWindow window = new MainWindow(manager);
+			window.show();
+		});
 	}
 }
