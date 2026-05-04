@@ -1,85 +1,88 @@
 package ui;
 
+import javafx.geometry.Pos;
+import javafx.scene.Scene;
+import javafx.scene.control.Tab;
+import javafx.scene.control.TabPane;
+import javafx.scene.layout.*;
+import javafx.scene.control.Label;
+import javafx.stage.Stage;
 import model.FinanceManager;
-import javax.swing.*;
-import java.awt.*;
 
-// main window of the GUI - uses a JTabbedPane to hold all four tabs
 public class MainWindow {
 
-	private FinanceManager manager;
-	private JFrame frame;
-	private JTabbedPane tabs;
+    private FinanceManager manager;
+    private Stage stage;
+    private TabPane tabPane;
 
-	// keep references so we can refresh them
-	private DashboardTab dashboardTab;
-	private TransactionsTab transactionsTab;
-	private AddTransactionTab addTransactionTab;
-	private BudgetTab budgetTab;
+    private DashboardTab dashboardTab;
+    private TransactionsTab transactionsTab;
+    private AddTransactionTab addTransactionTab;
+    private BudgetTab budgetTab;
 
-	public MainWindow(FinanceManager manager) {
-		this.manager = manager;
-	}
+    public MainWindow(FinanceManager manager, Stage stage) {
+        this.manager = manager;
+        this.stage = stage;
+    }
 
-	public void show() {
-		frame = new JFrame("Personal Finance Tracker — " + manager.getOwnerName());
-		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		frame.setSize(900, 650);
-		frame.setLocationRelativeTo(null); // center on screen
-		frame.setLayout(new BorderLayout());
+    public void show() {
+        BorderPane root = new BorderPane();
+        root.setStyle("-fx-background-color: #1a1d2e;");
 
-		// header panel at the top
-		frame.add(buildHeader(), BorderLayout.NORTH);
+        root.setTop(buildHeader());
 
-		// create the four tabs
-		tabs = new JTabbedPane();
-		tabs.setFont(new Font("Georgia", Font.PLAIN, 13));
+        tabPane = new TabPane();
+        tabPane.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
+        tabPane.setStyle("-fx-background-color: #1a1d2e;");
 
-		dashboardTab      = new DashboardTab(manager, this);
-		transactionsTab   = new TransactionsTab(manager, this);
-		addTransactionTab = new AddTransactionTab(manager, this);
-		budgetTab         = new BudgetTab(manager, this);
+        dashboardTab      = new DashboardTab(manager, this);
+        transactionsTab   = new TransactionsTab(manager, this);
+        addTransactionTab = new AddTransactionTab(manager, this);
+        budgetTab         = new BudgetTab(manager, this);
 
-		tabs.addTab("📊 Dashboard",        dashboardTab.getPanel());
-		tabs.addTab("📋 Transactions",     transactionsTab.getPanel());
-		tabs.addTab("➕ Add Transaction",  addTransactionTab.getPanel());
-		tabs.addTab("📂 Budget",           budgetTab.getPanel());
+        Tab tab1 = new Tab("📊 Dashboard",       dashboardTab.getContent());
+        Tab tab2 = new Tab("📋 Transactions",     transactionsTab.getContent());
+        Tab tab3 = new Tab("➕ Add Transaction",  addTransactionTab.getContent());
+        Tab tab4 = new Tab("📂 Budget",           budgetTab.getContent());
 
-		frame.add(tabs, BorderLayout.CENTER);
-		frame.setVisible(true);
-	}
+        tabPane.getTabs().addAll(tab1, tab2, tab3, tab4);
+        root.setCenter(tabPane);
 
-	private JPanel buildHeader() {
-		JPanel header = new JPanel(new BorderLayout());
-		header.setBackground(new Color(18, 20, 31));
-		header.setBorder(BorderFactory.createEmptyBorder(12, 20, 12, 20));
+        Scene scene = new Scene(root, 900, 650);
+        stage.setTitle("Personal Finance Tracker — " + manager.getOwnerName());
+        stage.setScene(scene);
+        stage.show();
+    }
 
-		JLabel title = new JLabel("💰 Personal Finance Tracker");
-		title.setFont(new Font("Georgia", Font.BOLD, 18));
-		title.setForeground(new Color(232, 213, 163));
+    private HBox buildHeader() {
+        HBox header = new HBox();
+        header.setStyle("-fx-background-color: #12141f; -fx-padding: 12 20 12 20;");
+        header.setAlignment(Pos.CENTER_LEFT);
 
-		JLabel owner = new JLabel("👤 " + manager.getOwnerName());
-		owner.setFont(new Font("Georgia", Font.PLAIN, 13));
-		owner.setForeground(new Color(138, 143, 168));
+        Label title = new Label("💰 Personal Finance Tracker");
+        title.setStyle("-fx-font-family: Georgia; -fx-font-size: 18; -fx-font-weight: bold; -fx-text-fill: #e8d5a3;");
 
-		header.add(title, BorderLayout.WEST);
-		header.add(owner, BorderLayout.EAST);
-		return header;
-	}
+        Label owner = new Label("👤 " + manager.getOwnerName());
+        owner.setStyle("-fx-font-family: Georgia; -fx-font-size: 13; -fx-text-fill: #8a8fa8;");
 
-	// called after data changes so all tabs update
-	public void refreshAll() {
-		dashboardTab.refresh();
-		transactionsTab.refresh();
-		budgetTab.refresh();
-	}
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
 
-	// switches to the transactions tab
-	public void goToTransactions() {
-		tabs.setSelectedIndex(1);
-	}
+        header.getChildren().addAll(title, spacer, owner);
+        return header;
+    }
 
-	public JFrame getFrame() {
-		return frame;
-	}
+    public void refreshAll() {
+        dashboardTab.refresh();
+        transactionsTab.refresh();
+        budgetTab.refresh();
+    }
+
+    public void goToTransactions() {
+        tabPane.getSelectionModel().select(1);
+    }
+
+    public Stage getStage() {
+        return stage;
+    }
 }

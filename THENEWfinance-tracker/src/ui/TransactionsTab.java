@@ -1,245 +1,190 @@
 package ui;
 
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.geometry.Insets;
+import javafx.scene.control.*;
+import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.layout.*;
 import model.*;
-import javax.swing.*;
-import javax.swing.table.*;
-import java.awt.*;
 import java.util.ArrayList;
 
-// second tab - shows all transactions in a JTable with search, filter, remove, mark paid
 public class TransactionsTab {
 
-	private FinanceManager manager;
-	private MainWindow mainWindow;
-	private JPanel panel;
-	private JTable table;
-	private DefaultTableModel tableModel;
-	private JTextField searchField;
-	private JComboBox<String> typeFilter;
-	private JLabel statusLabel;
+    private FinanceManager manager;
+    private MainWindow mainWindow;
+    private VBox content;
+    private TableView<TransactionRow> table;
+    private ObservableList<TransactionRow> tableData;
+    private TextField searchField;
+    private ComboBox<String> typeFilter;
+    private Label statusLabel;
 
-	public TransactionsTab(FinanceManager manager, MainWindow mainWindow) {
-		this.manager = manager;
-		this.mainWindow = mainWindow;
-		this.panel = new JPanel(new BorderLayout(0, 12));
-		buildContent();
-	}
+    public TransactionsTab(FinanceManager manager, MainWindow mainWindow) {
+        this.manager = manager;
+        this.mainWindow = mainWindow;
+        this.content = new VBox(12);
+        buildContent();
+    }
 
-	public JPanel getPanel() {
-		return panel;
-	}
+    public VBox getContent() {
+        return content;
+    }
 
-	public void refresh() {
-		applyFilter();
-	}
+    public void refresh() {
+        applyFilter();
+    }
 
-	private void buildContent() {
-		panel.setBackground(new Color(26, 29, 46));
-		panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+    private void buildContent() {
+        content.setStyle("-fx-background-color: #1a1d2e; -fx-padding: 20;");
 
-		// heading
-		JLabel heading = new JLabel("All Transactions");
-		heading.setFont(new Font("Georgia", Font.BOLD, 20));
-		heading.setForeground(new Color(232, 213, 163));
+        Label heading = new Label("All Transactions");
+        heading.setStyle("-fx-font-family: Georgia; -fx-font-size: 20; -fx-font-weight: bold; -fx-text-fill: #e8d5a3;");
 
-		// filter bar
-		JPanel filterBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
-		filterBar.setBackground(new Color(26, 29, 46));
+        // filter bar
+        HBox filterBar = new HBox(10);
+        filterBar.setStyle("-fx-background-color: #1a1d2e;");
 
-		searchField = new JTextField(20);
-		searchField.setFont(new Font("Georgia", Font.PLAIN, 13));
-		searchField.setBackground(new Color(34, 37, 58));
-		searchField.setForeground(new Color(200, 204, 219));
-		searchField.setCaretColor(Color.WHITE);
-		searchField.setBorder(BorderFactory.createCompoundBorder(
-				BorderFactory.createLineBorder(new Color(58, 61, 94)),
-				BorderFactory.createEmptyBorder(4, 8, 4, 8)));
-		searchField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
-			public void insertUpdate(javax.swing.event.DocumentEvent e) { applyFilter(); }
-			public void removeUpdate(javax.swing.event.DocumentEvent e) { applyFilter(); }
-			public void changedUpdate(javax.swing.event.DocumentEvent e) { applyFilter(); }
-		});
+        searchField = new TextField();
+        searchField.setPromptText("Search...");
+        searchField.setStyle("-fx-background-color: #22253a; -fx-text-fill: #c8ccdb; -fx-prompt-text-fill: #555878;");
+        searchField.setPrefWidth(200);
+        searchField.textProperty().addListener((obs, oldVal, newVal) -> applyFilter());
 
-		typeFilter = new JComboBox<>(new String[]{"All", "Income", "Expense", "Investment", "Debt"});
-		typeFilter.setFont(new Font("Georgia", Font.PLAIN, 13));
-		typeFilter.addActionListener(e -> applyFilter());
+        typeFilter = new ComboBox<>(FXCollections.observableArrayList("All", "Income", "Expense", "Investment", "Debt"));
+        typeFilter.setValue("All");
+        typeFilter.setStyle("-fx-background-color: #22253a; -fx-text-fill: #c8ccdb;");
+        typeFilter.setOnAction(e -> applyFilter());
 
-		JButton clearBtn = makeButton("Clear", new Color(68, 68, 102));
-		clearBtn.addActionListener(e -> {
-			searchField.setText("");
-			typeFilter.setSelectedIndex(0);
-		});
+        Button clearBtn = new Button("Clear");
+        clearBtn.setStyle("-fx-background-color: #44446a; -fx-text-fill: #c8ccdb; -fx-cursor: hand;");
+        clearBtn.setOnAction(e -> { searchField.clear(); typeFilter.setValue("All"); });
 
-		JLabel filterLbl = makeLabel("Filter:");
-		JLabel searchLbl = makeLabel("Search:");
+        filterBar.getChildren().addAll(new Label("Search:") {{ setStyle("-fx-text-fill: #8a8fa8;"); }},
+                searchField, new Label("Filter:") {{ setStyle("-fx-text-fill: #8a8fa8;"); }}, typeFilter, clearBtn);
 
-		filterBar.add(searchLbl);
-		filterBar.add(searchField);
-		filterBar.add(filterLbl);
-		filterBar.add(typeFilter);
-		filterBar.add(clearBtn);
+        // table
+        tableData = FXCollections.observableArrayList();
+        table = new TableView<>(tableData);
+        table.setStyle("-fx-background-color: #22253a; -fx-text-fill: #c8ccdb;");
+        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        VBox.setVgrow(table, Priority.ALWAYS);
 
-		// table
-		String[] columns = {"Type", "Description", "Amount", "Category", "Date", "Details"};
-		tableModel = new DefaultTableModel(columns, 0) {
-			@Override public boolean isCellEditable(int r, int c) { return false; }
-		};
-		table = new JTable(tableModel);
-		table.setFont(new Font("Georgia", Font.PLAIN, 12));
-		table.setRowHeight(24);
-		table.setBackground(new Color(34, 37, 58));
-		table.setForeground(new Color(200, 204, 219));
-		table.setGridColor(new Color(42, 45, 62));
-		table.setSelectionBackground(new Color(58, 61, 94));
-		table.setSelectionForeground(Color.WHITE);
-		table.getTableHeader().setFont(new Font("Georgia", Font.BOLD, 12));
-		table.getTableHeader().setBackground(new Color(26, 29, 46));
-		table.getTableHeader().setForeground(new Color(232, 213, 163));
-		table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
+        TableColumn<TransactionRow, String> typeCol  = col("Type",        "type",        120);
+        TableColumn<TransactionRow, String> descCol  = col("Description", "description", 200);
+        TableColumn<TransactionRow, String> amtCol   = col("Amount",      "amount",      100);
+        TableColumn<TransactionRow, String> catCol   = col("Category",    "category",    120);
+        TableColumn<TransactionRow, String> dateCol  = col("Date",        "date",        120);
+        TableColumn<TransactionRow, String> detCol   = col("Details",     "details",     180);
 
-		// color code the Type column
-		table.getColumnModel().getColumn(0).setCellRenderer(new DefaultTableCellRenderer() {
-			@Override
-			public Component getTableCellRendererComponent(JTable t, Object val, boolean sel, boolean foc, int r, int c) {
-				super.getTableCellRendererComponent(t, val, sel, foc, r, c);
-				setBackground(sel ? new Color(58, 61, 94) : new Color(34, 37, 58));
-				Color color = switch (val.toString()) {
-					case "Income"     -> new Color(39, 174, 96);
-					case "Expense"    -> new Color(230, 126, 34);
-					case "Investment" -> new Color(142, 68, 173);
-					case "Debt"       -> new Color(231, 76, 60);
-					default           -> new Color(200, 204, 219);
-				};
-				setForeground(color);
-				setFont(new Font("Georgia", Font.BOLD, 12));
-				return this;
-			}
-		});
+        table.getColumns().addAll(typeCol, descCol, amtCol, catCol, dateCol, detCol);
 
-		JScrollPane tableScroll = new JScrollPane(table);
-		tableScroll.getViewport().setBackground(new Color(34, 37, 58));
-		tableScroll.setBorder(BorderFactory.createLineBorder(new Color(42, 45, 62)));
+        // action buttons
+        statusLabel = new Label("");
+        statusLabel.setStyle("-fx-font-family: Georgia; -fx-font-size: 12; -fx-text-fill: #8a8fa8;");
 
-		// action buttons
-		JPanel actions = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
-		actions.setBackground(new Color(26, 29, 46));
+        Button removeBtn = new Button("🗑  Remove Selected");
+        removeBtn.setStyle("-fx-background-color: #c0392b; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;");
+        removeBtn.setOnAction(e -> removeSelected());
 
-		JButton removeBtn = makeButton("🗑  Remove Selected", new Color(192, 57, 43));
-		removeBtn.addActionListener(e -> removeSelected());
+        Button markPaidBtn = new Button("✅  Mark Debt as Paid");
+        markPaidBtn.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;");
+        markPaidBtn.setOnAction(e -> markDebtPaid());
 
-		JButton markPaidBtn = makeButton("✅  Mark Debt as Paid", new Color(39, 174, 96));
-		markPaidBtn.addActionListener(e -> markDebtPaid());
+        HBox actions = new HBox(10, removeBtn, markPaidBtn, statusLabel);
+        actions.setStyle("-fx-background-color: #1a1d2e;");
 
-		statusLabel = makeLabel("");
+        content.getChildren().addAll(heading, filterBar, table, actions);
+        applyFilter();
+    }
 
-		actions.add(removeBtn);
-		actions.add(markPaidBtn);
-		actions.add(statusLabel);
+    private TableColumn<TransactionRow, String> col(String title, String field, int width) {
+        TableColumn<TransactionRow, String> col = new TableColumn<>(title);
+        col.setCellValueFactory(new PropertyValueFactory<>(field));
+        col.setPrefWidth(width);
+        col.setStyle("-fx-text-fill: #c8ccdb;");
+        return col;
+    }
 
-		panel.add(heading, BorderLayout.NORTH);
-		panel.add(filterBar, BorderLayout.BEFORE_FIRST_LINE);
+    private void applyFilter() {
+        String keyword = searchField == null ? "" : searchField.getText().toLowerCase().trim();
+        String type = typeFilter == null ? "All" : typeFilter.getValue();
 
-		JPanel center = new JPanel(new BorderLayout(0, 8));
-		center.setBackground(new Color(26, 29, 46));
-		center.add(filterBar, BorderLayout.NORTH);
-		center.add(tableScroll, BorderLayout.CENTER);
-		center.add(actions, BorderLayout.SOUTH);
+        tableData.clear();
+        int count = 0;
+        for (Transaction t : manager.getTransactions()) {
+            boolean matchType = type.equals("All") || t.getType().equalsIgnoreCase(type);
+            boolean matchKw   = keyword.isEmpty() || t.getDescription().toLowerCase().contains(keyword);
+            if (matchType && matchKw) {
+                String detail = switch (t.getType()) {
+                    case "Income"     -> "Source: " + ((Income) t).getSource();
+                    case "Expense"    -> "Via: " + ((Expense) t).getPaymentMethod();
+                    case "Investment" -> ((Investment) t).getInvestmentType() + " | " + ((Investment) t).getExpectedReturn() + "%";
+                    case "Debt"       -> ((Debt) t).getInterestRate() + "% | " + (((Debt) t).isPaid() ? "PAID" : "Outstanding");
+                    default           -> "";
+                };
+                tableData.add(new TransactionRow(
+                        t.getType(),
+                        t.getDescription(),
+                        String.format("$%.2f", t.getAmount()),
+                        t.getCategory(),
+                        t.getDate().format(java.time.format.DateTimeFormatter.ofPattern("MMM dd, yyyy")),
+                        detail
+                ));
+                count++;
+            }
+        }
+        if (statusLabel != null)
+            statusLabel.setText("Showing " + count + " of " + manager.getTransactions().size());
+    }
 
-		panel.add(heading, BorderLayout.NORTH);
-		panel.add(center, BorderLayout.CENTER);
+    private void removeSelected() {
+        TransactionRow row = table.getSelectionModel().getSelectedItem();
+        if (row == null) { statusLabel.setText("Select a transaction first."); return; }
 
-		applyFilter();
-	}
+        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION,
+                "Remove \"" + row.getDescription() + "\"?", ButtonType.YES, ButtonType.NO);
+        confirm.showAndWait().ifPresent(btn -> {
+            if (btn == ButtonType.YES) {
+                ArrayList<Transaction> list = manager.getTransactions();
+                list.removeIf(t -> t.getDescription().equals(row.getDescription()));
+                mainWindow.refreshAll();
+                statusLabel.setText("Removed: " + row.getDescription());
+            }
+        });
+    }
 
-	private void applyFilter() {
-		String keyword = searchField.getText().toLowerCase().trim();
-		String type = (String) typeFilter.getSelectedItem();
+    private void markDebtPaid() {
+        TransactionRow row = table.getSelectionModel().getSelectedItem();
+        if (row == null) { statusLabel.setText("Select a transaction first."); return; }
+        if (!row.getType().equals("Debt")) { statusLabel.setText("That is not a Debt."); return; }
 
-		tableModel.setRowCount(0);
-		int count = 0;
-		for (Transaction t : manager.getTransactions()) {
-			boolean matchType = type.equals("All") || t.getType().equalsIgnoreCase(type);
-			boolean matchKw   = keyword.isEmpty() || t.getDescription().toLowerCase().contains(keyword);
-			if (matchType && matchKw) {
-				String detail = switch (t.getType()) {
-					case "Income"     -> "Source: " + ((Income) t).getSource();
-					case "Expense"    -> "Via: " + ((Expense) t).getPaymentMethod();
-					case "Investment" -> ((Investment) t).getInvestmentType() + " | " + ((Investment) t).getExpectedReturn() + "%";
-					case "Debt"       -> ((Debt) t).getInterestRate() + "% | " + (((Debt) t).isPaid() ? "PAID" : "Outstanding");
-					default           -> "";
-				};
-				tableModel.addRow(new Object[]{
-					t.getType(),
-					t.getDescription(),
-					String.format("$%.2f", t.getAmount()),
-					t.getCategory(),
-					t.getDate().format(java.time.format.DateTimeFormatter.ofPattern("MMM dd, yyyy")),
-					detail
-				});
-				count++;
-			}
-		}
-		if (statusLabel != null) {
-			statusLabel.setText("Showing " + count + " of " + manager.getTransactions().size());
-		}
-	}
+        for (Transaction t : manager.getTransactions()) {
+            if (t instanceof Debt debt && t.getDescription().equals(row.getDescription())) {
+                if (debt.isPaid()) { statusLabel.setText("Already paid."); return; }
+                debt.markAsPaid();
+                mainWindow.refreshAll();
+                statusLabel.setText("Marked as paid: " + row.getDescription());
+                return;
+            }
+        }
+    }
 
-	private void removeSelected() {
-		int row = table.getSelectedRow();
-		if (row < 0) { statusLabel.setText("Select a transaction first."); return; }
+    // simple data class for the TableView rows
+    public static class TransactionRow {
+        private final String type, description, amount, category, date, details;
 
-		String desc = (String) tableModel.getValueAt(row, 1);
-		int confirm = JOptionPane.showConfirmDialog(mainWindow.getFrame(),
-				"Remove \"" + desc + "\"?", "Confirm", JOptionPane.YES_NO_OPTION);
-		if (confirm == JOptionPane.YES_OPTION) {
-			// find and remove from manager
-			ArrayList<Transaction> list = manager.getTransactions();
-			for (int i = 0; i < list.size(); i++) {
-				if (list.get(i).getDescription().equals(desc)) {
-					list.remove(i);
-					break;
-				}
-			}
-			mainWindow.refreshAll();
-			statusLabel.setText("Removed: " + desc);
-		}
-	}
+        public TransactionRow(String type, String description, String amount,
+                              String category, String date, String details) {
+            this.type = type; this.description = description; this.amount = amount;
+            this.category = category; this.date = date; this.details = details;
+        }
 
-	private void markDebtPaid() {
-		int row = table.getSelectedRow();
-		if (row < 0) { statusLabel.setText("Select a transaction first."); return; }
-
-		String type = (String) tableModel.getValueAt(row, 0);
-		String desc = (String) tableModel.getValueAt(row, 1);
-
-		if (!type.equals("Debt")) { statusLabel.setText("That is not a Debt."); return; }
-
-		for (Transaction t : manager.getTransactions()) {
-			if (t instanceof Debt debt && t.getDescription().equals(desc)) {
-				if (debt.isPaid()) { statusLabel.setText("Already paid."); return; }
-				debt.markAsPaid();
-				mainWindow.refreshAll();
-				statusLabel.setText("Marked as paid: " + desc);
-				return;
-			}
-		}
-	}
-
-	private JButton makeButton(String text, Color color) {
-		JButton btn = new JButton(text);
-		btn.setFont(new Font("Georgia", Font.BOLD, 12));
-		btn.setBackground(color);
-		btn.setForeground(Color.WHITE);
-		btn.setFocusPainted(false);
-		btn.setBorderPainted(false);
-		btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-		return btn;
-	}
-
-	private JLabel makeLabel(String text) {
-		JLabel l = new JLabel(text);
-		l.setFont(new Font("Georgia", Font.PLAIN, 12));
-		l.setForeground(new Color(138, 143, 168));
-		return l;
-	}
+        public String getType()        { return type; }
+        public String getDescription() { return description; }
+        public String getAmount()      { return amount; }
+        public String getCategory()    { return category; }
+        public String getDate()        { return date; }
+        public String getDetails()     { return details; }
+    }
 }
